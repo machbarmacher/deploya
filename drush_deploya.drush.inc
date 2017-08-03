@@ -13,13 +13,6 @@ use GitElephant\Repository;
 function drush_deploya_drush_command() {
   $items = array();
 
-  $items['deploya-remotes'] = array(
-    'callback' => 'drush_deploya_remotes',
-    'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
-    'aliases' => ['derem'],
-    'description' => "",
-  );
-
   $items['deploya-push-code'] = array(
     'callback' => 'drush_deploya_push_code',
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
@@ -50,35 +43,48 @@ function drush_deploya_drush_command() {
   return $items;
 }
 
-/**
- * Implementation of drush_hook_COMMAND().
- */
-function drush_deploya_remotes() {
-  // @todo Check status and abstract out.
-  $repo = new Repository(DRUPAL_ROOT);
-  // @see _drush_sitealias_all_list()
-  drush_sitealias_load_all();
-  $aliases = drush_get_context('site-aliases');
-  foreach ($aliases as $name => $alias) {
-    if (drush_sitealias_is_remote_site($alias)) {
-      $uri = "$alias[remote_user]@$alias[remote_host]";
-      drush_log("Setting remote $name to $uri.", \Drush\Log\LogLevel::INFO);
-      try {
-        $remote = $repo->getRemote($name);
-        $remote->setPushURL($uri);
-        $remote->setFetchURL($uri);
-      } catch (\InvalidArgumentException $e) {
-        $remote = $repo->addRemote($name, $uri);
-      }
-    }
-  }
-}
-
 function drush_deploya_push_code($target) {
   // @todo Check status and abstract out.
   $repo = new Repository(DRUPAL_ROOT);
-  // @todo Ensure remote here.
+
+  // @see _drush_sitealias_all_list()
+  drush_sitealias_load_all();
+  $aliases = drush_get_context('site-aliases');
+  if (!isset($aliases[$target])) {
+    drush_set_error("Unknown target alias: $target");
+  }
+  $target_alias = $aliases[$target];
+  $uri = _drush_deploya_push_code_uri($target_alias);
+
+  try {
+    $target_remote = $repo->getRemote($target);
+  } catch (\InvalidArgumentException $e) {
+    drush_log("Adding remote $target");
+    $repo->addRemote($target, $uri);
+    $target_remote = $repo->getRemote($target);
+  }
+  $current_uri = $target_remote->getPushURL();
+  if ($current_uri !== !$uri) {
+    drush_log("Setting remote $target from '$current_uri' to '$uri''.");
+    $target_remote->setPushURL($uri);
+  }
   $repo->push($target);
+}
+
+function _drush_deploya_push_code_uri($target_alias) {
+  if (!empty($target_alias['deploya-push-code-uri'])) {
+    $uri = $target_alias['deploya-push-code-uri'];
+  }
+  else {
+    $uri = dirname($target_alias['root']);
+    if (!empty($target_alias['remote-host'])) {
+      $uri = "{$target_alias['remote-host']}:$uri";
+      if (!empty($target_alias['remote-user'])) {
+        $uri = "{$target_alias['remote-user']}@$uri";
+      }
+    }
+  }
+  return $uri;
 }
 
 function drush_deploya_pull() {
