@@ -7,8 +7,6 @@ use GitElephant\Repository;
 
 /**
  * Implements hook_drush_command().
- *
- * @todo Disable rsync.
  */
 function drush_deploya_drush_command() {
   $items = array();
@@ -18,8 +16,12 @@ function drush_deploya_drush_command() {
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
     'aliases' => ['depushc'],
     'description' => 'Push code to other installation.',
-    'arguments' => ['$destination' => 'The remote to push to.'],
-    'pulldata' => 'If set, pull data on destination afterwards.'
+    'arguments' => [
+      '$destination' => 'The remote to push to.',
+    ],
+    'options' => [
+      'pulldata' => 'If set, pull data on destination afterwards.'
+    ],
   );
 
   $items['deploya-pull-data'] = array(
