@@ -1,0 +1,15 @@
+{
+  "name": "machbarmacher/deploya",
+  "description": "Drush deploament helper.",
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "authors": [
+    {
+      "name": "Axel Rutz",
+      "email": "axel.rutz@machbarmacher.net"
+    }
+  ],
+  "require": {
+    "cypresslab/gitelephant": "^1.1"
+  }
+}
