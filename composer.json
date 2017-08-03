@@ -1,6 +1,7 @@
 {
   "name": "machbarmacher/deploya",
-  "description": "Drush deploament helper.",
+  "description": "Drush deployment helper.",
+  "type": "drupal-drush",
   "minimum-stability": "dev",
   "prefer-stable": true,
   "authors": [
