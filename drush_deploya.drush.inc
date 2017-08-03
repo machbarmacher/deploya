@@ -104,17 +104,14 @@ function drush_deploya_pull() {
   if (drush_get_option('db', TRUE)) {
     drush_invoke_process("@self", 'sql-sync', ["@$source", "@$destination"]);
   }
-  if (drush_get_option('files', TRUE) && drush_get_option('public-files', TRUE)) {
-    _drush_deploya_rsync($source, $destination, '%files');
-  }
-
-  $has_private_files = TRUE;
-  if ($has_private_files && drush_get_option('files', TRUE) && drush_get_option('private-files', TRUE)) {
-    drush_invoke_process("@self", 'rsync', ["@$source:%private", "@$destination:%private"], ['exclude_paths'=> drush_get_option('private-files-exclude-paths')]);
-  }
+  _drush_deploya_rsync($source, $destination, '%files', 'public');
+  _drush_deploya_rsync($source, $destination, '%private', 'private');
 }
 
-function _drush_deploya_rsync($source, $destination, $path) {
+function _drush_deploya_rsync($source, $destination, $path, $prefix) {
+  if (!drush_get_option('files', TRUE) || !drush_get_option("$prefix-files", TRUE)) {
+    return;
+  }
   $source_path = "@$source:$path";
   $destination_path = "@$destination:$path";
 
@@ -122,23 +119,13 @@ function _drush_deploya_rsync($source, $destination, $path) {
   $additional_options = [];
   $destination_settings = drush_sitealias_evaluate_path($destination_path, $additional_options, FALSE, "rsync", 'destination-');
   $source_settings = drush_sitealias_evaluate_path($source_path, $additional_options, FALSE, "rsync", 'source-');
-  if (!isset($source_settings)) {
-    return drush_set_error('DRUSH_BAD_PATH', dt('Could not evaluate source path !path.', array('!path' => $source)));
+  if (!isset($source_settings) || !isset($destination_settings)) {
+    drush_log("No file path: $prefix");
+    return;
   }
-  if (!isset($destination_settings)) {
-    return drush_set_error('DRUSH_BAD_PATH', dt('Could not evaluate destination path !path.', array('!path' => $destination)));
-  }
-
 
   drush_invoke_process("@self", 'rsync', [
     $source_path,
     $destination_path
-  ], ['exclude_paths' => drush_get_option('public-files-exclude-paths')]);
-}
-
-function _drush_deploya_ensure_alias_path($path) {
-  // @see drush_core_rsync()
-  $additional_options = [];
-  $values = drush_sitealias_evaluate_path($path, $additional_options);
-
+  ], ['exclude_paths' => drush_get_option("$prefix-files-exclude-paths")]);
 }
