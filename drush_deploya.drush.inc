@@ -17,7 +17,7 @@ function drush_deploya_drush_command() {
     'callback' => 'drush_deploya_push_code',
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
     'aliases' => ['depushc'],
-    'description' => "",
+    'description' => 'Push code to other installation.',
     'arguments' => ['$destination' => 'The remote to push to.'],
     'pulldata' => 'If set, pull data on destination afterwards.'
   );
@@ -26,8 +26,7 @@ function drush_deploya_drush_command() {
     'callback' => 'drush_deploya_pull',
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
     'aliases' => ['depulld'],
-    'description' => "",
-    'arguments' => [],
+    'description' => 'Pull DB and files from live.',
     'options' => [
       'source' => 'Source, defaults to "live".',
       'destination' => 'Destination alias, if different from current installation.',
@@ -78,10 +77,11 @@ function drush_deploya_push_code($destination) {
 }
 
 function _drush_deploya_push_code_uri($destination_alias) {
-  if (!empty($destination_alias['deploya-push-code-uri'])) {
-    $uri = $destination_alias['deploya-push-code-uri'];
+  if (!empty($destination_alias['git-deployment-uri'])) {
+    $uri = $destination_alias['git-deployment-uri'];
   }
   else {
+    // Use parent directory of drupal root as git remote.
     $uri = dirname($destination_alias['root']);
     if (!empty($destination_alias['remote-host'])) {
       $uri = "{$destination_alias['remote-host']}:$uri";
