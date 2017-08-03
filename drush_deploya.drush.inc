@@ -18,8 +18,8 @@ function drush_deploya_drush_command() {
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
     'aliases' => ['depushc'],
     'description' => "",
-    'arguments' => ['$target' => 'The remote to push to.'],
-    'pulldata' => 'If set, pull data on target afterwards.'
+    'arguments' => ['$destination' => 'The remote to push to.'],
+    'pulldata' => 'If set, pull data on destination afterwards.'
   );
 
   $items['deploya-pull-data'] = array(
@@ -30,7 +30,7 @@ function drush_deploya_drush_command() {
     'arguments' => [],
     'options' => [
       'source' => 'Source, defaults to "live".',
-      'target' => 'Target alias, if different from current installation.',
+      'destination' => 'Destination alias, if different from current installation.',
       'db' => 'Use --no-db to omit database.',
       'files' => 'Use --no-files to omit files.',
       'public-files' => 'Use --no-public-files to omit public file.',
@@ -43,50 +43,50 @@ function drush_deploya_drush_command() {
   return $items;
 }
 
-function drush_deploya_push_code($target) {
+function drush_deploya_push_code($destination) {
   // @todo Check status and abstract out.
   $repo = new Repository(DRUPAL_ROOT);
 
   // @see _drush_sitealias_all_list()
   drush_sitealias_load_all();
   $aliases = drush_get_context('site-aliases');
-  if (!isset($aliases[$target])) {
-    drush_set_error("Unknown target alias: $target");
+  if (!isset($aliases[$destination])) {
+    drush_set_error("Unknown destination alias: $destination");
   }
-  $target_alias = $aliases[$target];
-  $uri = _drush_deploya_push_code_uri($target_alias);
+  $destination_alias = $aliases[$destination];
+  $uri = _drush_deploya_push_code_uri($destination_alias);
 
   try {
-    $target_remote = $repo->getRemote($target);
+    $destination_remote = $repo->getRemote($destination);
   } catch (\InvalidArgumentException $e) {
-    drush_log("Adding remote $target");
-    $repo->addRemote($target, $uri);
-    $target_remote = $repo->getRemote($target);
+    drush_log("Adding remote $destination");
+    $repo->addRemote($destination, $uri);
+    $destination_remote = $repo->getRemote($destination);
   }
-  $current_uri = $target_remote->getPushURL();
+  $current_uri = $destination_remote->getPushURL();
   if ($current_uri !== !$uri) {
-    drush_log("Setting remote $target from '$current_uri' to '$uri''.");
-    $target_remote->setPushURL($uri);
+    drush_log("Setting remote $destination from '$current_uri' to '$uri''.");
+    $destination_remote->setPushURL($uri);
   }
 
   // Do it.
-  $repo->push($target);
+  $repo->push($destination);
 
   if (drush_get_option('pulldata')) {
-    drush_invoke_process("@$target", 'deploya-pull-data');
+    drush_invoke_process("@$destination", 'deploya-pull-data');
   }
 }
 
-function _drush_deploya_push_code_uri($target_alias) {
-  if (!empty($target_alias['deploya-push-code-uri'])) {
-    $uri = $target_alias['deploya-push-code-uri'];
+function _drush_deploya_push_code_uri($destination_alias) {
+  if (!empty($destination_alias['deploya-push-code-uri'])) {
+    $uri = $destination_alias['deploya-push-code-uri'];
   }
   else {
-    $uri = dirname($target_alias['root']);
-    if (!empty($target_alias['remote-host'])) {
-      $uri = "{$target_alias['remote-host']}:$uri";
-      if (!empty($target_alias['remote-user'])) {
-        $uri = "{$target_alias['remote-user']}@$uri";
+    $uri = dirname($destination_alias['root']);
+    if (!empty($destination_alias['remote-host'])) {
+      $uri = "{$destination_alias['remote-host']}:$uri";
+      if (!empty($destination_alias['remote-user'])) {
+        $uri = "{$destination_alias['remote-user']}@$uri";
       }
     }
   }
@@ -95,44 +95,44 @@ function _drush_deploya_push_code_uri($target_alias) {
 
 function drush_deploya_pull() {
   $source = drush_get_option('source', 'live');
-  $target = drush_get_option('target', 'self');
+  $destination = drush_get_option('destination', 'self');
 
-  if ($source == $target) {
-    drush_log("No need to pull from $source to $target.");
+  if ($source == $destination) {
+    drush_log("No need to pull from $source to $destination.");
   }
 
   if (drush_get_option('db', TRUE)) {
-    drush_invoke_process("@self", 'sql-sync', ["@$source", "@$target"]);
+    drush_invoke_process("@self", 'sql-sync', ["@$source", "@$destination"]);
   }
   if (drush_get_option('files', TRUE) && drush_get_option('public-files', TRUE)) {
-    _drush_deploya_rsync($source, $target, '%files');
+    _drush_deploya_rsync($source, $destination, '%files');
   }
 
   $has_private_files = TRUE;
   if ($has_private_files && drush_get_option('files', TRUE) && drush_get_option('private-files', TRUE)) {
-    drush_invoke_process("@self", 'rsync', ["@$source:%private", "@$target:%private"], ['exclude_paths'=> drush_get_option('private-files-exclude-paths')]);
+    drush_invoke_process("@self", 'rsync', ["@$source:%private", "@$destination:%private"], ['exclude_paths'=> drush_get_option('private-files-exclude-paths')]);
   }
 }
 
-function _drush_deploya_rsync($source, $target, $path) {
+function _drush_deploya_rsync($source, $destination, $path) {
   $source_path = "@$source:$path";
-  $target_path = "@$target:$path";
+  $destination_path = "@$destination:$path";
 
   // @see drush_core_rsync()
   $additional_options = [];
-  $target_settings = drush_sitealias_evaluate_path($target_path, $additional_options, FALSE, "rsync", 'target-');
+  $destination_settings = drush_sitealias_evaluate_path($destination_path, $additional_options, FALSE, "rsync", 'destination-');
   $source_settings = drush_sitealias_evaluate_path($source_path, $additional_options, FALSE, "rsync", 'source-');
   if (!isset($source_settings)) {
     return drush_set_error('DRUSH_BAD_PATH', dt('Could not evaluate source path !path.', array('!path' => $source)));
   }
-  if (!isset($target_settings)) {
+  if (!isset($destination_settings)) {
     return drush_set_error('DRUSH_BAD_PATH', dt('Could not evaluate destination path !path.', array('!path' => $destination)));
   }
 
 
   drush_invoke_process("@self", 'rsync', [
     $source_path,
-    $target_path
+    $destination_path
   ], ['exclude_paths' => drush_get_option('public-files-exclude-paths')]);
 }
 
