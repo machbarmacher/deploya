@@ -19,7 +19,7 @@ function drush_deploya_drush_command() {
     'aliases' => ['depushc'],
     'description' => "",
     'arguments' => ['$target' => 'The remote to push to.'],
-    // @todo Implement --pulldata.
+    'pulldata' => 'If set, pull data on target afterwards.'
   );
 
   $items['deploya-pull-data'] = array(
@@ -68,7 +68,13 @@ function drush_deploya_push_code($target) {
     drush_log("Setting remote $target from '$current_uri' to '$uri''.");
     $target_remote->setPushURL($uri);
   }
+
+  // Do it.
   $repo->push($target);
+
+  if (drush_get_option('pulldata')) {
+    drush_invoke_process("@$target", 'deploya-pull-data');
+  }
 }
 
 function _drush_deploya_push_code_uri($target_alias) {
@@ -90,13 +96,49 @@ function _drush_deploya_push_code_uri($target_alias) {
 function drush_deploya_pull() {
   $source = drush_get_option('source', 'live');
   $target = drush_get_option('target', 'self');
+
+  if ($source == $target) {
+    drush_log("No need to pull from $source to $target.");
+  }
+
   if (drush_get_option('db', TRUE)) {
     drush_invoke_process("@self", 'sql-sync', ["@$source", "@$target"]);
   }
   if (drush_get_option('files', TRUE) && drush_get_option('public-files', TRUE)) {
-    drush_invoke_process("@self", 'rsync', ["@$source:%public", "@$target:%public"], ['exclude_paths'=> drush_get_option('public-files-exclude-paths')]);
+    _drush_deploya_rsync($source, $target, '%files');
   }
-  if (drush_get_option('files', TRUE) && drush_get_option('private-files', TRUE)) {
+
+  $has_private_files = TRUE;
+  if ($has_private_files && drush_get_option('files', TRUE) && drush_get_option('private-files', TRUE)) {
     drush_invoke_process("@self", 'rsync', ["@$source:%private", "@$target:%private"], ['exclude_paths'=> drush_get_option('private-files-exclude-paths')]);
   }
+}
+
+function _drush_deploya_rsync($source, $target, $path) {
+  $source_path = "@$source:$path";
+  $target_path = "@$target:$path";
+
+  // @see drush_core_rsync()
+  $additional_options = [];
+  $target_settings = drush_sitealias_evaluate_path($target_path, $additional_options, FALSE, "rsync", 'target-');
+  $source_settings = drush_sitealias_evaluate_path($source_path, $additional_options, FALSE, "rsync", 'source-');
+  if (!isset($source_settings)) {
+    return drush_set_error('DRUSH_BAD_PATH', dt('Could not evaluate source path !path.', array('!path' => $source)));
+  }
+  if (!isset($target_settings)) {
+    return drush_set_error('DRUSH_BAD_PATH', dt('Could not evaluate destination path !path.', array('!path' => $destination)));
+  }
+
+
+  drush_invoke_process("@self", 'rsync', [
+    $source_path,
+    $target_path
+  ], ['exclude_paths' => drush_get_option('public-files-exclude-paths')]);
+}
+
+function _drush_deploya_ensure_alias_path($path) {
+  // @see drush_core_rsync()
+  $additional_options = [];
+  $values = drush_sitealias_evaluate_path($path, $additional_options);
+
 }
