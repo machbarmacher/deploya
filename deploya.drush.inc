@@ -8,11 +8,11 @@ use GitElephant\Repository;
 /**
  * Implements hook_drush_command().
  */
-function drush_deploya_drush_command() {
+function deploya_drush_command() {
   $items = array();
 
   $items['deploya-push-code'] = array(
-    'callback' => 'drush_deploya_push_code',
+    'callback' => 'deploya_push_code',
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
     'aliases' => ['depushc'],
     'description' => 'Push code to other installation.',
@@ -25,7 +25,7 @@ function drush_deploya_drush_command() {
   );
 
   $items['deploya-pull-data'] = array(
-    'callback' => 'drush_deploya_pull',
+    'callback' => 'deploya_pull',
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
     'aliases' => ['depulld'],
     'description' => 'Pull DB and files from live.',
@@ -44,7 +44,7 @@ function drush_deploya_drush_command() {
   return $items;
 }
 
-function drush_deploya_push_code($destination) {
+function deploya_push_code($destination) {
   // @todo Check status and abstract out.
   $repo = new Repository(DRUPAL_ROOT);
 
@@ -55,7 +55,7 @@ function drush_deploya_push_code($destination) {
     drush_set_error("Unknown destination alias: $destination");
   }
   $destination_alias = $aliases[$destination];
-  $uri = _drush_deploya_push_code_uri($destination_alias);
+  $uri = _deploya_push_code_uri($destination_alias);
 
   try {
     $destination_remote = $repo->getRemote($destination);
@@ -78,7 +78,7 @@ function drush_deploya_push_code($destination) {
   }
 }
 
-function _drush_deploya_push_code_uri($destination_alias) {
+function _deploya_push_code_uri($destination_alias) {
   if (!empty($destination_alias['git-deployment-uri'])) {
     $uri = $destination_alias['git-deployment-uri'];
   }
@@ -95,7 +95,7 @@ function _drush_deploya_push_code_uri($destination_alias) {
   return $uri;
 }
 
-function drush_deploya_pull() {
+function deploya_pull() {
   $source = drush_get_option('source', 'live');
   $destination = drush_get_option('destination', 'self');
 
@@ -106,11 +106,11 @@ function drush_deploya_pull() {
   if (drush_get_option('db', TRUE)) {
     drush_invoke_process("@self", 'sql-sync', ["@$source", "@$destination"]);
   }
-  _drush_deploya_rsync($source, $destination, '%files', 'public');
-  _drush_deploya_rsync($source, $destination, '%private', 'private');
+  _deploya_rsync($source, $destination, '%files', 'public');
+  _deploya_rsync($source, $destination, '%private', 'private');
 }
 
-function _drush_deploya_rsync($source, $destination, $path, $prefix) {
+function _deploya_rsync($source, $destination, $path, $prefix) {
   if (!drush_get_option('files', TRUE) || !drush_get_option("$prefix-files", TRUE)) {
     return;
   }
