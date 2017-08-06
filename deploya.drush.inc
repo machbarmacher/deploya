@@ -14,24 +14,25 @@ function deploya_drush_command() {
   $items['deploya-push-code'] = array(
     'callback' => 'deploya_push_code',
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
-    'aliases' => ['depushc'],
+    'aliases' => ['dpushc'],
     'description' => 'Push code to other installation.',
     'arguments' => [
-      '$destination' => 'The remote to push to.',
+      '$destination' => 'The remote installation\'s alias (without @) to push to.',
     ],
     'options' => [
-      'pulldata' => 'If set, pull data on destination afterwards.'
+      'pulldata' => 'If set, pull data on destination afterwards.',
+      'pulldata-source' => 'If pulldata is set, the source to pull data from. Defaults to "live".',
     ],
   );
 
   $items['deploya-pull-data'] = array(
     'callback' => 'deploya_pull',
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
-    'aliases' => ['depulld'],
+    'aliases' => ['dpulld'],
     'description' => 'Pull DB and files from live.',
     'options' => [
-      'source' => 'Source, defaults to "live".',
-      'destination' => 'Destination alias, if different from current installation.',
+      'source' => 'Source alias (without @), defaults to "live".',
+      'destination' => 'Destination  alias (without @), if different from current site.',
       'db' => 'Use --no-db to omit database.',
       'files' => 'Use --no-files to omit files.',
       'public-files' => 'Use --no-public-files to omit public file.',
@@ -74,7 +75,8 @@ function deploya_push_code($destination) {
   $repo->push($destination);
 
   if (drush_get_option('pulldata')) {
-    drush_invoke_process("@$destination", 'deploya-pull-data');
+    $pulldata_source = drush_get_option('pulldata-source', 'live');
+    drush_invoke_process("@$destination", 'deploya-pull-data', [], ['source' => $pulldata_source]);
   }
 }
 
