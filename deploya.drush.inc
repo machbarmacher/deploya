@@ -59,20 +59,16 @@ function deploya_push_code($destination) {
   $uri = _deploya_push_code_uri($destination_alias);
 
   try {
-    try {
-      $destination_remote = $repo->getRemote($destination);
-    } catch (\InvalidArgumentException $e) {
-      drush_log("Adding remote $destination");
-      $repo->addRemote($destination, $uri);
-      $destination_remote = $repo->getRemote($destination);
-    }
-    $current_uri = $destination_remote->getPushURL();
-    if ($current_uri !== !$uri) {
-      drush_log("Setting remote $destination from '$current_uri' to '$uri''.");
-      $destination_remote->setPushURL($uri);
-    }
-  } catch (Exception $e) {
-    return drush_set_error('DEPLOYA_REPO_EXCEPTION', dt('Repo exception: !e', ['!e' => $e->getMessage()]));
+    $destination_remote = $repo->getRemote($destination);
+  } catch (\InvalidArgumentException $e) {
+    drush_log("Adding remote $destination");
+    $repo->addRemote($destination, $uri);
+    $destination_remote = $repo->getRemote($destination);
+  }
+  $current_uri = $destination_remote->getPushURL();
+  if ($current_uri !== !$uri) {
+    drush_log("Setting remote $destination from '$current_uri' to '$uri''.");
+    $destination_remote->setPushURL($uri);
   }
 
   // Do it.
