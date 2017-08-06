@@ -66,15 +66,21 @@ function deploya_push_code($destination) {
     $destination_remote = $repo->getRemote($destination);
   }
   $current_uri = $destination_remote->getPushURL();
+  $t_args = [
+    '!destination' => $destination,
+    '!uri' => $uri,
+    '!current-uri' => $current_uri
+  ];
   if ($current_uri !== $uri) {
-    drush_log("Setting remote $destination from '$current_uri' to '$uri'.");
+    drush_log(dt("Setting remote $destination from '$current_uri' to '$uri'.", $t_args));
     $destination_remote->setPushURL($uri);
   }
   else {
-    drush_log("Checked remote $destination is '$uri'.");
+    drush_log(dt("Checked remote $destination is '$uri'.", $t_args));
   }
 
   // Do it.
+  drush_log(dt('Push to remote: !remote', ['!remote' => $destination]));
   $repo->push($destination);
 
   if (drush_get_option('pulldata')) {
