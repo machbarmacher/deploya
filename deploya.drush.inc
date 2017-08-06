@@ -54,7 +54,7 @@ function deploya_push_code($destination) {
   drush_sitealias_load_all();
   $aliases = drush_get_context('site-aliases');
   if (!isset($aliases[$destination])) {
-    drush_set_error("Unknown destination alias: $destination");
+    return drush_set_error("Unknown destination alias: $destination");
   }
   $destination_alias = $aliases[$destination];
   $uri = _deploya_push_code_uri($destination_alias);
