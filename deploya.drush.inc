@@ -19,6 +19,7 @@ function deploya_drush_command() {
     'arguments' => [
       '$destination' => 'The remote installation\'s alias (without @) to push to.',
     ],
+    'required-arguments' => TRUE,
     'options' => [
       'pulldata' => 'If set, pull data on destination afterwards.',
       'pulldata-source' => 'If pulldata is set, the source to pull data from. Defaults to "live".',
