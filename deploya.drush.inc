@@ -57,7 +57,10 @@ function deploya_push_code($destination) {
   }
   $destination_alias = $aliases["@$destination"];
   $uri = _deploya_push_code_uri($destination_alias);
+  $branch = !empty($destination_alias['git-deployment-branch'])
+    ? $destination_alias['git-deployment-branch'] : 'master';
 
+  // We set up a named remote, but might as well push to uri.
   try {
     $destination_remote = $repo->getRemote($destination);
   } catch (\InvalidArgumentException $e) {
@@ -81,7 +84,7 @@ function deploya_push_code($destination) {
 
   // Do it.
   drush_log(dt('Push to remote: !remote', ['!remote' => $destination]));
-  $repo->push($destination);
+  $repo->push($destination, "+HEAD:$branch");
 
   if (drush_get_option('pulldata')) {
     $pulldata_source = drush_get_option('pulldata-source', 'live');
