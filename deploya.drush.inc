@@ -133,8 +133,13 @@ function deploya_pull() {
   if ($source == $destination) {
     return drush_set_error('DEPLOYA_ERROR', dt('No need to pull data from !source to !destination', $t_args), LogLevel::OK);
   }
-  else {
-    drush_log(dt('Pulling data from !source to !destination', $t_args), LogLevel::OK);
+
+  // Prompt for confirmation. This is destructive.
+  if (!drush_get_context('DRUSH_SIMULATE')) {
+    drush_print(dt("You will delete data in !destination and replace with data from !source", $t_args));
+    if (!drush_confirm(dt('Do you really want to continue?'))) {
+      return drush_user_abort();
+    }
   }
 
   if (drush_get_option('db', TRUE)) {
@@ -143,8 +148,8 @@ function deploya_pull() {
   }
   drush_log(dt('Pulling public files...'), LogLevel::OK);
   _deploya_rsync($source, $destination, '%files', 'public');
-  // @fixme Test if private files are set.
   drush_log(dt('Pulling private files...'), LogLevel::OK);
+  // That function will check if the file path does exist.
   _deploya_rsync($source, $destination, '%private', 'private');
 }
 
