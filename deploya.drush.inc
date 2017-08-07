@@ -21,6 +21,7 @@ function deploya_drush_command() {
     ],
     'required-arguments' => TRUE,
     'options' => [
+      'fix-no-ff' => 'Do a pull -s=ours first. Use if pushing is rejected due to "non fast-forward".',
       'pulldata' => 'If set, pull data on destination afterwards.',
       'pulldata-source' => 'If pulldata is set, the source to pull data from. Defaults to "live".',
     ],
@@ -82,18 +83,20 @@ function deploya_push_code($destination) {
     drush_log(dt("Checked remote $destination is '$uri'.", $t_args));
   }
 
-  // @todo Check if needed.
-  // Do a pull --autostash --strategy=ours
-  // Git can autostash for pull, but needs 2.9 for --autostash, and only 2.6 for -c rebase.autoStash=true
-  $repo->addGlobalConfig('rebase.autoStash', 'true');
-  $repo->addGlobalOption('strategy', 'ours');
-  $repo->pull($destination, 'HEAD');
-  $repo->removeGlobalOption('strategy');
-  $repo->removeGlobalConfig('rebase.autoStash');
+  if (drush_get_option('fix-no-ff')) {
+    // Do a pull --autostash --strategy=ours
+    // Git can autostash for pull, but needs 2.9 for --autostash, and only 2.6 for -c rebase.autoStash=true
+    $repo->addGlobalConfig('rebase.autoStash', 'true');
+    $repo->addGlobalCommandArgument('--strategy=ours');
+    $repo->pull($destination, 'HEAD', FALSE);
+    $repo->removeGlobalCommandArgument('--strategy=ours');
+    $repo->removeGlobalConfig('rebase.autoStash');
+  }
 
   // Do it.
   drush_log(dt('Push to remote: !remote', ['!remote' => $destination]));
   $repo->push($destination, "+HEAD:$branch");
+  // @fixme Find a way to print command output.
 
   if (drush_get_option('pulldata')) {
     $pulldata_source = drush_get_option('pulldata-source', 'live');
