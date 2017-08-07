@@ -3,6 +3,7 @@
  * @file deploya.drush.inc
  */
 
+use Drush\Log\LogLevel;
 use GitElephant\Repository;
 
 /**
@@ -77,7 +78,7 @@ function deploya_push_code($destination) {
     '!current-uri' => $current_uri
   ];
   if ($current_uri !== $uri) {
-    drush_log(dt('Setting uri for remote !destination from !current_uri to !uri.', $t_args), \Drush\Log\LogLevel::OK);
+    drush_log(dt('Setting uri for remote !destination from !current_uri to !uri.', $t_args), LogLevel::OK);
     $destination_remote->setPushURL($uri);
   }
   else {
@@ -95,10 +96,10 @@ function deploya_push_code($destination) {
   }
 
   // Do it.
-  drush_log(dt('Pushing to remote: !remote', ['!remote' => $destination]), \Drush\Log\LogLevel::OK);
+  drush_log(dt('Pushing to remote: !remote', ['!remote' => $destination]), LogLevel::OK);
   $repo->push($destination, "+HEAD:$branch");
   $errorOutput = $repo->getCaller()->getErrorOutput();
-  drush_log($errorOutput, \Drush\Log\LogLevel::OK);
+  drush_log($errorOutput, LogLevel::OK);
 
   if ($pulldata_source = drush_get_option('pulldata')) {
     $pulldata_source = ($pulldata_source === TRUE) ? 'live' : $pulldata_source;
@@ -130,20 +131,20 @@ function deploya_pull() {
 
   $t_args = ['!source' => $source, '!destination' => $destination];
   if ($source == $destination) {
-    return drush_set_error('DEPLOYA_ERROR', dt('No need to pull data from !source to !destination', $t_args), \Drush\Log\LogLevel::OK);
+    return drush_set_error('DEPLOYA_ERROR', dt('No need to pull data from !source to !destination', $t_args), LogLevel::OK);
   }
   else {
-    drush_log(dt('Pulling data from !source to !destination', $t_args), \Drush\Log\LogLevel::OK);
+    drush_log(dt('Pulling data from !source to !destination', $t_args), LogLevel::OK);
   }
 
   if (drush_get_option('db', TRUE)) {
-    drush_log(dt('Pulling DB...'), \Drush\Log\LogLevel::OK);
+    drush_log(dt('Pulling DB...'), LogLevel::OK);
     drush_invoke_process("@self", 'sql-sync', ["@$source", "@$destination"]);
   }
-  drush_log(dt('Pulling public files...'), \Drush\Log\LogLevel::OK);
+  drush_log(dt('Pulling public files...'), LogLevel::OK);
   _deploya_rsync($source, $destination, '%files', 'public');
   // @fixme Test if private files are set.
-  drush_log(dt('Pulling private files...'), \Drush\Log\LogLevel::OK);
+  drush_log(dt('Pulling private files...'), LogLevel::OK);
   _deploya_rsync($source, $destination, '%private', 'private');
 }
 
