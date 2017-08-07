@@ -53,33 +53,35 @@ function deploya_push_code($destination) {
   // @see _drush_sitealias_all_list()
   drush_sitealias_load_all();$aliases = drush_get_context('site-aliases');
   if (!isset($aliases["@$destination"])) {
-    return drush_set_error("Unknown destination alias: $destination");
+    return drush_set_error('DEPLOYA_ERROR', dt('Unknown destination alias: !destination', ['!destination' => $destination]));
   }
   $destination_alias = $aliases["@$destination"];
   $uri = _deploya_push_code_uri($destination_alias);
   $branch = !empty($destination_alias['git-deployment-branch'])
     ? $destination_alias['git-deployment-branch'] : 'master';
+  $t_args = [
+    '!destination' => $destination,
+    '!uri' => $uri,
+  ];
 
   // We set up a named remote, but might as well push to uri.
   try {
     $destination_remote = $repo->getRemote($destination);
   } catch (\InvalidArgumentException $e) {
-    drush_log("Adding remote $destination");
+    drush_log('Adding remote !destination', $t_args);
     $repo->addRemote($destination, $uri);
     $destination_remote = $repo->getRemote($destination);
   }
   $current_uri = $destination_remote->getPushURL();
-  $t_args = [
-    '!destination' => $destination,
-    '!uri' => $uri,
+  $t_args += [
     '!current-uri' => $current_uri
   ];
   if ($current_uri !== $uri) {
-    drush_log(dt("Setting remote $destination from '$current_uri' to '$uri'.", $t_args), \Drush\Log\LogLevel::OK);
+    drush_log(dt('Setting uri for remote !destination from !current_uri to !uri.', $t_args), \Drush\Log\LogLevel::OK);
     $destination_remote->setPushURL($uri);
   }
   else {
-    drush_log(dt("Checked remote $destination is '$uri'.", $t_args));
+    drush_log(dt('Checked uri for remote !destination is !uri.', $t_args));
   }
 
   if (drush_get_option('fix-no-ff')) {
@@ -93,15 +95,13 @@ function deploya_push_code($destination) {
   }
 
   // Do it.
-  drush_log(dt('Push to remote: !remote', ['!remote' => $destination]));
+  drush_log(dt('Pushing to remote: !remote', ['!remote' => $destination]), \Drush\Log\LogLevel::OK);
   $repo->push($destination, "+HEAD:$branch");
-  // @fixme Find a way to print command output.
   $errorOutput = $repo->getCaller()->getErrorOutput();
   drush_log($errorOutput, \Drush\Log\LogLevel::OK);
 
   if ($pulldata_source = drush_get_option('pulldata')) {
     $pulldata_source = ($pulldata_source === TRUE) ? 'live' : $pulldata_source;
-    drush_log(dt('Pulling data from !source to !destination', ['!source' => $pulldata_source, '!destination' => $destination]));
     // Pull via self as we don't know if remotes can access each other.
     drush_invoke_process("@self", 'deploya-pull-data', [], ['source' => $pulldata_source, 'destination' => $destination]);
   }
@@ -128,14 +128,22 @@ function deploya_pull() {
   $source = drush_get_option('source', 'live');
   $destination = drush_get_option('destination', 'self');
 
+  $t_args = ['!source' => $source, '!destination' => $destination];
   if ($source == $destination) {
-    drush_log("No need to pull from $source to $destination.");
+    return drush_set_error('DEPLOYA_ERROR', dt('No need to pull data from !source to !destination', $t_args), \Drush\Log\LogLevel::OK);
+  }
+  else {
+    drush_log(dt('Pulling data from !source to !destination', $t_args), \Drush\Log\LogLevel::OK);
   }
 
   if (drush_get_option('db', TRUE)) {
+    drush_log(dt('Pulling DB...'), \Drush\Log\LogLevel::OK);
     drush_invoke_process("@self", 'sql-sync', ["@$source", "@$destination"]);
   }
+  drush_log(dt('Pulling public files...'), \Drush\Log\LogLevel::OK);
   _deploya_rsync($source, $destination, '%files', 'public');
+  // @fixme Test if private files are set.
+  drush_log(dt('Pulling private files...'), \Drush\Log\LogLevel::OK);
   _deploya_rsync($source, $destination, '%private', 'private');
 }
 
