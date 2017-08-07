@@ -82,6 +82,15 @@ function deploya_push_code($destination) {
     drush_log(dt("Checked remote $destination is '$uri'.", $t_args));
   }
 
+  // @todo Check if needed.
+  // Do a pull --autostash --strategy=ours
+  // Git can autostash for pull, but needs 2.9 for --autostash, and only 2.6 for -c rebase.autoStash=true
+  $repo->addGlobalConfig('rebase.autoStash', 'true');
+  $repo->addGlobalOption('strategy', 'ours');
+  $repo->pull($destination, 'HEAD');
+  $repo->removeGlobalOption('strategy');
+  $repo->removeGlobalConfig('rebase.autoStash');
+
   // Do it.
   drush_log(dt('Push to remote: !remote', ['!remote' => $destination]));
   $repo->push($destination, "+HEAD:$branch");
