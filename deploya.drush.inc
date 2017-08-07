@@ -22,8 +22,7 @@ function deploya_drush_command() {
     'required-arguments' => TRUE,
     'options' => [
       'fix-no-ff' => 'Do a pull -s=ours first. Use if pushing is rejected due to "non fast-forward".',
-      'pulldata' => 'If set, pull data on destination afterwards.',
-      'pulldata-source' => 'If pulldata is set, the source to pull data from. Defaults to "live".',
+      'pulldata' => 'Use --pulldata to pull data from "live" afterwards. Use --pulldata=foo to pull from foo.',
     ],
   );
 
@@ -97,10 +96,14 @@ function deploya_push_code($destination) {
   drush_log(dt('Push to remote: !remote', ['!remote' => $destination]));
   $repo->push($destination, "+HEAD:$branch");
   // @fixme Find a way to print command output.
+  $errorOutput = $repo->getCaller()->getErrorOutput();
+  drush_log($errorOutput, \Drush\Log\LogLevel::OK);
 
-  if (drush_get_option('pulldata')) {
-    $pulldata_source = drush_get_option('pulldata-source', 'live');
-    drush_invoke_process("@$destination", 'deploya-pull-data', [], ['source' => $pulldata_source]);
+  if ($pulldata_source = drush_get_option('pulldata')) {
+    $pulldata_source = ($pulldata_source === TRUE) ? 'live' : $pulldata_source;
+    drush_log(dt('Pulling data from !source to !destination', ['!source' => $pulldata_source, '!destination' => $destination]));
+    // Pull via self as we don't know if remotes can access each other.
+    drush_invoke_process("@self", 'deploya-pull-data', [], ['source' => $pulldata_source, 'destination' => $destination]);
   }
 }
 
