@@ -52,7 +52,8 @@ function deploya_push_code($destination) {
   $repo = new Repository(DRUPAL_ROOT);
 
   // @see _drush_sitealias_all_list()
-  drush_sitealias_load_all();$aliases = drush_get_context('site-aliases');
+  drush_sitealias_load_all();
+  $aliases = drush_get_context('site-aliases');
   if (!isset($aliases["@$destination"])) {
     return drush_set_error('DEPLOYA_ERROR', dt('Unknown destination alias: !destination', ['!destination' => $destination]));
   }
@@ -128,10 +129,20 @@ function _deploya_push_code_uri($destination_alias) {
 function deploya_pull() {
   $source = drush_get_option('source', 'live');
   $destination = drush_get_option('destination', 'self');
-
   $t_args = ['!source' => $source, '!destination' => $destination];
+
+  drush_sitealias_load_all();
+  $aliases = drush_get_context('site-aliases');
+  if (!isset($aliases["@$source"])) {
+    return drush_set_error('DEPLOYA_ERROR', dt('Unknown source: !source', $t_args));
+  }
+  if (!isset($aliases["@$destination"])) {
+    return drush_set_error('DEPLOYA_ERROR', dt('Unknown destination: !destination', $t_args));
+  }
+
+
   if ($source == $destination) {
-    return drush_set_error('DEPLOYA_ERROR', dt('No need to pull data from !source to !destination', $t_args), LogLevel::OK);
+    return drush_set_error('DEPLOYA_ERROR', dt('No need to pull data from !source to !destination', $t_args));
   }
 
   // Prompt for confirmation. This is destructive.
