@@ -211,8 +211,11 @@ function _deploya_rsync($source, $destination, $path, $prefix) {
   $additional_options = [];
   $destination_settings = drush_sitealias_evaluate_path($destination_path, $additional_options, FALSE, "rsync", 'destination-');
   $source_settings = drush_sitealias_evaluate_path($source_path, $additional_options, FALSE, "rsync", 'source-');
-  if (!isset($source_settings['evaluated-path']) || !isset($destination_settings['evaluated-path'])) {
-    drush_log(dt("No file path: !prefix", $t_args), LogLevel::WARNING);
+  if (
+    !isset($source_settings['path-aliases'][$source_path])
+    || !isset($destination_settings['path-aliases'][$destination_path])
+  ) {
+    drush_log(dt("Skipping nonexistent file path: !prefix", $t_args), LogLevel::WARNING);
     return;
   }
 
