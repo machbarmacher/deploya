@@ -146,17 +146,17 @@ function deploya_pull() {
     drush_log(dt('Pulling DB...'), LogLevel::OK);
     drush_invoke_process("@self", 'sql-sync', ["@$source", "@$destination"]);
   }
-  drush_log(dt('Pulling public files...'), LogLevel::OK);
   _deploya_rsync($source, $destination, '%files', 'public');
-  drush_log(dt('Pulling private files...'), LogLevel::OK);
   // That function will check if the file path does exist.
   _deploya_rsync($source, $destination, '%private', 'private');
 }
 
 function _deploya_rsync($source, $destination, $path, $prefix) {
   if (!drush_get_option('files', TRUE) || !drush_get_option("$prefix-files", TRUE)) {
+    drush_log(dt('Skipping !prefix files...', ['!prefix' => $prefix]));
     return;
   }
+  drush_log(dt('Pulling !prefix files...', ['!prefix' => $prefix]), LogLevel::OK);
   $source_path = "@$source:$path";
   $destination_path = "@$destination:$path";
 
