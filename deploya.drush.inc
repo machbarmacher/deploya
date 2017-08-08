@@ -199,11 +199,11 @@ function deploya_pull() {
 }
 
 function _deploya_rsync($source, $destination, $path, $prefix) {
+  $t_args = ['!prefix' => $prefix];
   if (!drush_get_option('files', TRUE) || !drush_get_option("$prefix-files", TRUE)) {
-    drush_log(dt('Skipping !prefix files...', ['!prefix' => $prefix]));
+    drush_log(dt('Skipping !prefix files...', $t_args));
     return;
   }
-  drush_log(dt('Pulling !prefix files...', ['!prefix' => $prefix]), LogLevel::OK);
   $source_path = "@$source:$path";
   $destination_path = "@$destination:$path";
 
@@ -211,10 +211,12 @@ function _deploya_rsync($source, $destination, $path, $prefix) {
   $additional_options = [];
   $destination_settings = drush_sitealias_evaluate_path($destination_path, $additional_options, FALSE, "rsync", 'destination-');
   $source_settings = drush_sitealias_evaluate_path($source_path, $additional_options, FALSE, "rsync", 'source-');
-  if (!isset($source_settings) || !isset($destination_settings)) {
-    drush_log("No file path: $prefix");
+  if (!isset($source_settings['evaluated-path']) || !isset($destination_settings['evaluated-path'])) {
+    drush_log(dt("No file path: !prefix", $t_args), LogLevel::WARNING);
     return;
   }
+
+  drush_log(dt('Pulling !prefix files...', $t_args), LogLevel::OK);
 
   drush_invoke_process("@self", 'rsync', [
     $source_path,
