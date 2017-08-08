@@ -17,6 +17,9 @@ function deploya_drush_command() {
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
     'aliases' => ['dinfo'],
     'description' => 'Get URIs for alias.',
+    'arguments' => [
+      'alias' => 'The remote installation\'s alias (without @).',
+    ],
     'outputformat' => [
       'default' => 'key-value',
       'pipe-format' => 'var_export',
@@ -58,12 +61,19 @@ function deploya_drush_command() {
   return $items;
 }
 
-function deploya_info() {
+function deploya_info($alias_name) {
+  $info = [];
   // @see _drush_sitealias_all_list()
   drush_sitealias_load_all();
   $aliases = drush_get_context('site-aliases');
-  $alias = $aliases['@self'];
-  $info['SFTP root'] = _deploya_sftp_root($alias);
+  if (!isset($aliases["@$alias_name"])) {
+    return drush_set_error('DEPLOYA_ERROR', dt('Unknown alias: !alias', ['!alias' => $alias_name]));
+  }
+  $alias = $aliases["@$alias_name"];
+  $root_uri = _deploya_root_uri($alias);
+  if ($root_uri) {
+    $info['SFTP root'] = "sftp://$root_uri";
+  }
   return $info;
 }
 
@@ -134,17 +144,17 @@ function _deploya_push_code_uri($alias) {
     $uri = $alias['git-deployment-uri'];
   }
   else {
-    $uri = _deploya_sftp_root($alias);
+    $uri = _deploya_root_uri($alias, ':');
 
   }
   return $uri;
 }
 
-function _deploya_sftp_root($alias) {
+function _deploya_root_uri($alias, $separator = '') {
 // Use parent directory of drupal root as git remote.
   $uri = dirname($alias['root']);
   if (!empty($alias['remote-host'])) {
-    $uri = "{$alias['remote-host']}:$uri";
+    $uri = "{$alias['remote-host']}$separator$uri";
     if (!empty($alias['remote-user'])) {
       $uri = "{$alias['remote-user']}@$uri";
     }
