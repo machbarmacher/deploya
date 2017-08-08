@@ -219,5 +219,5 @@ function _deploya_rsync($source, $destination, $path, $prefix) {
   drush_invoke_process("@self", 'rsync', [
     $source_path,
     $destination_path
-  ], ['exclude_paths' => drush_get_option("$prefix-files-exclude-paths")]);
+  ], ['exclude-paths' => drush_get_option("$prefix-files-exclude-paths")]);
 }
