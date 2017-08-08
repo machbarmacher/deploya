@@ -12,6 +12,17 @@ use GitElephant\Repository;
 function deploya_drush_command() {
   $items = array();
 
+  $items['deploya-info'] = array(
+    'callback' => 'deploya_info',
+    'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
+    'aliases' => ['dinfo'],
+    'description' => 'Get URIs for alias.',
+    'outputformat' => [
+      'default' => 'key-value',
+      'pipe-format' => 'var_export',
+    ],
+  );
+
   $items['deploya-push-code'] = array(
     'callback' => 'deploya_push_code',
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
@@ -45,6 +56,15 @@ function deploya_drush_command() {
   );
 
   return $items;
+}
+
+function deploya_info() {
+  // @see _drush_sitealias_all_list()
+  drush_sitealias_load_all();
+  $aliases = drush_get_context('site-aliases');
+  $alias = $aliases['@self'];
+  $info['SFTP root'] = _deploya_sftp_root($alias);
+  return $info;
 }
 
 function deploya_push_code($destination) {
@@ -109,18 +129,24 @@ function deploya_push_code($destination) {
   }
 }
 
-function _deploya_push_code_uri($destination_alias) {
-  if (!empty($destination_alias['git-deployment-uri'])) {
-    $uri = $destination_alias['git-deployment-uri'];
+function _deploya_push_code_uri($alias) {
+  if (!empty($alias['git-deployment-uri'])) {
+    $uri = $alias['git-deployment-uri'];
   }
   else {
-    // Use parent directory of drupal root as git remote.
-    $uri = dirname($destination_alias['root']);
-    if (!empty($destination_alias['remote-host'])) {
-      $uri = "{$destination_alias['remote-host']}:$uri";
-      if (!empty($destination_alias['remote-user'])) {
-        $uri = "{$destination_alias['remote-user']}@$uri";
-      }
+    $uri = _deploya_sftp_root($alias);
+
+  }
+  return $uri;
+}
+
+function _deploya_sftp_root($alias) {
+// Use parent directory of drupal root as git remote.
+  $uri = dirname($alias['root']);
+  if (!empty($alias['remote-host'])) {
+    $uri = "{$alias['remote-host']}:$uri";
+    if (!empty($alias['remote-user'])) {
+      $uri = "{$alias['remote-user']}@$uri";
     }
   }
   return $uri;
