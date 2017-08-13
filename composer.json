@@ -10,7 +10,16 @@
       "email": "axel.rutz@machbarmacher.net"
     }
   ],
+  "_note1_repositories": "Until this PR is merged, copy this repo to root composer.json.",
+  "_note2_repositories": "Also require dev, not ^1.1.",
+  "_note3_repositories": "https://github.com/matteosister/GitElephant/issues/121",
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/machbarmacher/GitElephant"
+    }
+  ],
   "require": {
-    "cypresslab/gitelephant": "^1.1"
+    "cypresslab/gitelephant": "dev-develop"
   }
 }
