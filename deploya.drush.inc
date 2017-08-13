@@ -127,16 +127,29 @@ function deploya_push_code($destination) {
   }
 
   // Do it.
-  drush_log(dt('Pushing to remote: !remote', ['!remote' => $destination]), LogLevel::OK);
+  $local_branch = $repo->getMainBranch()->getName();
+  _deploya_log_branch_info($repo, $local_branch);
+  _deploya_log_branch_info($repo, "$destination/$branch");
+  drush_log(dt('Pushing...'), LogLevel::OK);
   $repo->push($destination, "+HEAD:$branch");
-  $errorOutput = $repo->getCaller()->getErrorOutput();
-  drush_log($errorOutput, LogLevel::OK);
+  _deploya_log_branch_info($repo, "$destination/$branch");
 
   if ($pulldata_source = drush_get_option('pulldata')) {
     $pulldata_source = ($pulldata_source === TRUE) ? 'live' : $pulldata_source;
     // Pull via self as we don't know if remotes can access each other.
+    // This breaks for rsync remote / remote.
+    // @todo Pull from remote, after checking and fixing live access.
     drush_invoke_process("@self", 'deploya-pull-data', [], ['source' => $pulldata_source, 'destination' => $destination]);
   }
+}
+
+function _deploya_log_branch_info(Repository $repo, $ref) {
+  $commit = $repo->getCommit($ref);
+  drush_log(dt('  !branch !sha !message', [
+    '!branch' => $ref,
+    '!sha' => $commit->getSha(TRUE),
+    '!message' => $commit->getMessage(),
+  ]), LogLevel::OK);
 }
 
 function _deploya_push_code_uri($alias) {
