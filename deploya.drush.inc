@@ -129,10 +129,11 @@ function deploya_push_code($destination) {
   // Do it.
   $local_branch = $repo->getMainBranch()->getName();
   _deploya_log_branch_info($repo, $local_branch);
-  _deploya_log_branch_info($repo, "$destination/$branch");
+  $repo->fetch($destination, $branch);
+  _deploya_log_branch_info($repo, "refs/remotes/$destination/$branch");
   drush_log(dt('Pushing...'), LogLevel::OK);
   $repo->push($destination, "+HEAD:$branch");
-  _deploya_log_branch_info($repo, "$destination/$branch");
+  _deploya_log_branch_info($repo, "refs/remotes/$destination/$branch");
 
   if ($pulldata_source = drush_get_option('pulldata')) {
     $pulldata_source = ($pulldata_source === TRUE) ? 'live' : $pulldata_source;
