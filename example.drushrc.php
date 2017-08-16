@@ -4,8 +4,8 @@
  */
 
 // Leave out unnecessary DB data in sql-sync and sql-dump.
-$options['skip-tables-list'] = array('migration_*');
-$options['structure-tables-list'] = array('cache', 'cache_*', 'history', 'search_*', 'sessions', 'watchdog');
+$options['skip-tables-list'] = 'migration_*';
+$options['structure-tables-list'] = 'cache,cache_*,history,search_*,sessions,watchdog';
 
 // Leave out unnecessary files.
 $command_specific['deploya-pull-data']['public-files-exclude-paths'] = 'advagg_css/:advagg_js/:css/:ctools/:feeds/:js/:languages/:styles/';
