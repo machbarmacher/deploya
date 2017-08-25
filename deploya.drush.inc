@@ -65,15 +65,11 @@ function deploya_drush_command() {
 
 function deploya_info($alias_name) {
   $info = [];
-  // @see _drush_sitealias_all_list()
-  drush_sitealias_load_all();
-  $aliases = drush_get_context('site-aliases');
-  if (!isset($aliases["@$alias_name"])) {
+  $alias = drush_sitealias_get_record("@$alias_name");
+  if (!$alias) {
     return drush_set_error('DEPLOYA_ERROR', dt('Unknown alias: !alias', ['!alias' => $alias_name]));
   }
-  $alias = $aliases["@$alias_name"];
-  $root_uri = _deploya_root_uri($alias);
-  if ($root_uri) {
+  if ($root_uri = _deploya_root_uri($alias)) {
     $info['SFTP root'] = "sftp://$root_uri";
   }
   if ($ssh = _deploya_remote_login($alias)) {
@@ -86,13 +82,10 @@ function deploya_push_code($destination) {
   // @todo Check status and abstract out.
   $repo = new Repository(DRUPAL_ROOT);
 
-  // @see _drush_sitealias_all_list()
-  drush_sitealias_load_all();
-  $aliases = drush_get_context('site-aliases');
-  if (!isset($aliases["@$destination"])) {
+  $destination_alias = drush_sitealias_get_record("@$destination");
+  if (!$destination_alias) {
     return drush_set_error('DEPLOYA_ERROR', dt('Unknown destination alias: !destination', ['!destination' => $destination]));
   }
-  $destination_alias = $aliases["@$destination"];
   $uri = _deploya_push_code_uri($destination_alias);
   $branch = !empty($destination_alias['git-deployment-branch'])
     ? $destination_alias['git-deployment-branch'] : 'master';
@@ -193,12 +186,10 @@ function deploya_pull() {
   $destination = drush_get_option('destination', 'self');
   $t_args = ['!source' => $source, '!destination' => $destination];
 
-  drush_sitealias_load_all();
-  $aliases = drush_get_context('site-aliases');
-  if (!isset($aliases["@$source"])) {
+  if (!drush_sitealias_get_record("@$source")) {
     return drush_set_error('DEPLOYA_ERROR', dt('Unknown source: !source', $t_args));
   }
-  if (!isset($aliases["@$destination"])) {
+  if (!drush_sitealias_get_record("@$destination")) {
     return drush_set_error('DEPLOYA_ERROR', dt('Unknown destination: !destination', $t_args));
   }
 
@@ -217,6 +208,8 @@ function deploya_pull() {
 
   if (drush_get_option('db', TRUE)) {
     drush_log(dt('Pulling DB...'), LogLevel::OK);
+    // Dunno why we need this sometimes.
+    drush_sitealias_create_self_alias();
     drush_invoke_process("@self", 'sql-sync', ["@$source", "@$destination"]);
   }
   _deploya_rsync($source, $destination, '%files', 'public');
