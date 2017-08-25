@@ -8,6 +8,8 @@ use GitElephant\Repository;
 
 /**
  * Implements hook_drush_command().
+ *
+ * @todo Add command to generate and show ssh key.
  */
 function deploya_drush_command() {
   $items = array();
