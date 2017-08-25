@@ -74,6 +74,9 @@ function deploya_info($alias_name) {
   if ($root_uri) {
     $info['SFTP root'] = "sftp://$root_uri";
   }
+  if ($ssh = _deploya_remote_login($alias)) {
+    $info['SSH'] = $ssh;
+  }
   return $info;
 }
 
@@ -166,14 +169,21 @@ function _deploya_push_code_uri($alias) {
 
 function _deploya_root_uri($alias, $separator = '') {
 // Use parent directory of drupal root as git remote.
-  $uri = dirname($alias['root']);
+  $path = dirname($alias['root']);
+  $login = _deploya_remote_login($alias);
+  $uri = "$login$separator$path";
+  return $uri;
+}
+
+function _deploya_remote_login($alias) {
+  $login = '';
   if (!empty($alias['remote-host'])) {
-    $uri = "{$alias['remote-host']}$separator$uri";
+    $login = "{$alias['remote-host']}";
     if (!empty($alias['remote-user'])) {
-      $uri = "{$alias['remote-user']}@$uri";
+      $login = "{$alias['remote-user']}@$login";
     }
   }
-  return $uri;
+  return $login;
 }
 
 function deploya_pull() {
