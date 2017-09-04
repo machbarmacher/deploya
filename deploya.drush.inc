@@ -104,7 +104,7 @@ function deploya_push_code($destination) {
   }
   $current_uri = $destination_remote->getPushURL();
   $t_args += [
-    '!current-uri' => $current_uri
+    '!current_uri' => $current_uri
   ];
   if ($current_uri !== $uri) {
     drush_log(dt('Setting uri for remote !destination from !current_uri to !uri.', $t_args), LogLevel::OK);
