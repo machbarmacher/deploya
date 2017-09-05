@@ -108,7 +108,8 @@ function deploya_push_code($destination) {
   ];
   if ($current_uri !== $uri) {
     drush_log(dt('Setting uri for remote !destination from !current_uri to !uri.', $t_args), LogLevel::OK);
-    $destination_remote->setPushURL($uri);
+    $repo->getCaller()->execute(sprintf('remote set-url %s %s',
+      drush_escapeshellarg($destination), drush_escapeshellarg($uri)));
   }
   else {
     drush_log(dt('Checked uri for remote !destination is !uri.', $t_args));
