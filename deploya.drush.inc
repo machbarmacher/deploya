@@ -96,11 +96,14 @@ function deploya_push_code($destination) {
 
   // We set up a named remote, but might as well push to uri.
   try {
-    $destination_remote = $repo->getRemote($destination);
+    $destination_remote = $repo->getRemote($destination, FALSE);
   } catch (\InvalidArgumentException $e) {
+    // Remote does not exist.
     drush_log('Adding remote !destination', $t_args);
     $repo->addRemote($destination, $uri);
     $destination_remote = $repo->getRemote($destination);
+  } catch (\Exception $e) {
+    // Something else happened.
   }
   $current_uri = $destination_remote->getPushURL();
   $t_args += [
