@@ -84,12 +84,7 @@ function deploya_push_code($destination) {
   // @todo Check status and abstract out.
   $repo = new Repository(DRUPAL_ROOT);
 
-  $destination_alias = drush_sitealias_get_record("@$destination");
-  if (isset($destination_alias['site-list'])) {
-    // Get all keys with equal value.
-    // Since php5.6 we can unpack numirical arrays.
-    $destination_alias = array_intersect_assoc(... array_values(drush_sitealias_resolve_sitelist($destination_alias)));
-  }
+  $destination_alias = _deploya_get_remote_alias($destination);
   if (!$destination_alias) {
     return drush_set_error('DEPLOYA_ERROR', dt('Unknown destination alias: !destination', ['!destination' => $destination]));
   }
@@ -154,6 +149,20 @@ function deploya_push_code($destination) {
     // @todo Pull from remote, after checking and fixing live access.
     drush_invoke_process("@self", 'deploya-pull-data', [], ['source' => $pulldata_source, 'destination' => $destination]);
   }
+}
+
+/**
+ * @param $alias_name
+ * @return array
+ */
+function _deploya_get_remote_alias($alias_name) {
+  $alias = drush_sitealias_get_record("@$alias_name");
+  if (isset($alias['site-list'])) {
+    // Get all keys with equal value.
+    // Since php5.6 we can unpack numirical arrays.
+    $alias = array_intersect_assoc(... array_values(drush_sitealias_resolve_sitelist($alias)));
+  }
+  return $alias;
 }
 
 function _deploya_log_branch_info(Repository $repo, $ref) {
