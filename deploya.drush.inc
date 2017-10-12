@@ -64,6 +64,7 @@ function deploya_drush_command() {
 }
 
 function deploya_info($alias_name) {
+  _deploya_autoload();
   $info = [];
   $alias = drush_sitealias_get_record("@$alias_name");
   if (!$alias) {
@@ -79,6 +80,7 @@ function deploya_info($alias_name) {
 }
 
 function deploya_push_code($destination) {
+  _deploya_autoload();
   // @todo Check status and abstract out.
   $repo = new Repository(DRUPAL_ROOT);
 
@@ -186,6 +188,7 @@ function _deploya_remote_login($alias) {
 }
 
 function deploya_pull() {
+  _deploya_autoload();
   $source = drush_get_option('source', 'live');
   $destination = drush_get_option('destination', 'self');
   $t_args = ['!source' => $source, '!destination' => $destination];
@@ -248,4 +251,16 @@ function _deploya_rsync($source, $destination, $path, $prefix) {
     $source_path,
     $destination_path
   ], ['exclude-paths' => drush_get_option("$prefix-files-exclude-paths")]);
+}
+
+function _deploya_autoload() {
+  $autoloaderLocations = [
+    __DIR__ . '/../autoload.php',
+    __DIR__ . '/../../../autoload.php',
+  ];
+  foreach ($autoloaderLocations as $file) {
+    if (is_file($file)) {
+      require $file;
+    }
+  }
 }
