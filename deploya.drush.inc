@@ -86,9 +86,9 @@ function deploya_push_code($destination) {
 
   $destination_alias = drush_sitealias_get_record("@$destination");
   if (isset($destination_alias['site-list'])) {
-    // Since php5.6 we can unpack.
-    // So we get all keys with equal value.
-    $destination_alias = array_intersect_uassoc(... drush_sitealias_resolve_sitelist($destination_alias));
+    // Get all keys with equal value.
+    // Since php5.6 we can unpack numirical arrays.
+    $destination_alias = array_intersect_uassoc(... array_values(drush_sitealias_resolve_sitelist($destination_alias)));
   }
   if (!$destination_alias) {
     return drush_set_error('DEPLOYA_ERROR', dt('Unknown destination alias: !destination', ['!destination' => $destination]));
