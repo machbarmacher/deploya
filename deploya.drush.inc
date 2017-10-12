@@ -255,8 +255,12 @@ function _deploya_rsync($source, $destination, $path, $prefix) {
 
 function _deploya_autoload() {
   $autoloaderLocations = [
-    __DIR__ . '/../autoload.php',
-    __DIR__ . '/../../../autoload.php',
+    __DIR__ . '/../vendor/autoload.php',
+    __DIR__ . '/../../../vendor/autoload.php',
+    // drush/deploya
+    __DIR__ . '/../../vendor/autoload.php',
+    // docroot/sites/all/drush/deploya
+    __DIR__ . '/../../../../../vendor/autoload.php',
   ];
   foreach ($autoloaderLocations as $file) {
     if (is_file($file)) {
