@@ -60,6 +60,17 @@ function deploya_drush_command() {
     ],
   );
 
+  $items['deploya-allow'] = array(
+    'callback' => 'deploya_allow_ssh',
+    'bootstrap' => DRUSH_BOOTSTRAP_NONE,
+    'aliases' => ['dallow'],
+    'description' => 'Allow to ssh from source to destination.',
+    'arguments' => [
+      'source' => 'Source alias (without @).',
+      'destination' => 'Destination alias (without @).',
+    ],
+  );
+
   return $items;
 }
 
@@ -220,6 +231,68 @@ function _deploya_remote_login($alias) {
     }
   }
   return $login;
+}
+
+function deploya_allow_ssh($source, $destination) {
+  _deploya_autoload();
+  $source_alias = _deploya_get_remote_alias($source);
+  $destination_alias = _deploya_get_remote_alias($destination);
+  if (!$source_alias) {
+    return drush_set_error('DEPLOYA_ERROR', dt('Unknown destination alias: !alias', ['!alias' => $source]));
+  }
+  if (!isset($source_alias['remote-host']) || !isset($source_alias['remote-user'])) {
+    return drush_set_error('DEPLOYA_ERROR', dt('Non-remote destination alias: !alias', ['!alias' => $source]));
+  }
+  if (!$destination_alias) {
+    return drush_set_error('DEPLOYA_ERROR', dt('Unknown destination alias: !alias', ['!alias' => $destination]));
+  }
+  if (!isset($destination_alias['remote-host']) || !isset($destination_alias['remote-user'])) {
+    return drush_set_error('DEPLOYA_ERROR', dt('Non-remote destination alias: !alias', ['!alias' => $destination]));
+  }
+
+  $result = drush_invoke_process($source_alias, 'exec', ['ssh', '-q', _deploya_remote_login($destination_alias), 'exit']);
+  if (empty($result['error_status'])) {
+    drush_log(dt('Login attampt succeeded, nothing to do.'), LogLevel::OK);
+    return;
+  }
+  else {
+    drush_log(dt('Login attampt failed, transferring key.'), LogLevel::OK);
+  }
+
+  $pubkey = _deploya_get_pubkey($source_alias);
+
+  if (!$pubkey) {
+    drush_log(dt('Generating key.'), LogLevel::OK);
+    drush_invoke_process($source_alias, 'exec', ['cd', '&&', 'ssh-keygen', '-t', 'rsa', '-f', '.ssh/id_rsa']);
+    $pubkey = _deploya_get_pubkey($source_alias);
+  }
+  if (!$pubkey) {
+    return drush_set_error('DEPLOYA_ERROR', dt('Can not get pubkey.'));
+  }
+  $pubkeyfile = drush_save_data_to_temp_file($pubkey);
+
+  drush_invoke_process('@self', 'exec', ['ssh-copy-id', _deploya_remote_login($destination_alias), '-i', $pubkeyfile]);
+  drush_log(dt('Transferred key.'), LogLevel::SUCCESS);
+}
+
+/**
+ * @param array $source_alias
+ * @return string|null
+ */
+function _deploya_get_pubkey($source_alias) {
+  //$result = drush_invoke_process($source_alias, 'exec', ['cd', '&&', 'cat', '.ssh/id_rsa.pub'], []);
+  // Muscle this as drush_invoke_process does not return command output.
+  $cmd = 'cat ~/.ssh/id_rsa.pub';
+  $exec = _drush_backend_generate_command($source_alias, $cmd);
+  $success = drush_shell_exec($exec);
+  $output = drush_shell_exec_output();
+
+  if ($success && $output) {
+    return $output[0];
+  }
+  else {
+    return NULL;
+  }
 }
 
 function deploya_pull() {
