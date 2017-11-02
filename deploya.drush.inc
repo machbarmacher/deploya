@@ -154,18 +154,33 @@ function deploya_push_code($destination) {
   }
 }
 
-/**
- * @param $alias_name
- * @return array
- */
 function _deploya_get_remote_alias($alias_name) {
   $alias = drush_sitealias_get_record("@$alias_name");
   if (isset($alias['site-list'])) {
-    // Get all keys with equal value.
-    // Since php5.6 we can unpack numirical arrays.
-    $alias = array_intersect_assoc(... array_values(drush_sitealias_resolve_sitelist($alias)));
+    $aliases = drush_sitealias_resolve_sitelist($alias);
+    $alias = _deploya_intersect($aliases);
   }
   return $alias;
+}
+
+function _deploya_intersect($aliases) {
+  // Get all keys with equal value.
+  // Muscle this as array_intersect_assoc only works with string values.
+  if ($aliases) {
+    $result = array_shift($aliases);
+  }
+  else {
+    $result = [];
+  }
+  foreach ($aliases as $alias) {
+    foreach ($alias as $key => $value) {
+      $equal = isset($result[$key]) && $value === $result[$key];
+      if (!$equal) {
+        unset($result[$key]);
+      }
+    }
+  }
+  return $result;
 }
 
 function _deploya_log_branch_info(Repository $repo, $ref) {
