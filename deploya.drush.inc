@@ -128,7 +128,10 @@ function deploya_push_code($destination) {
     // Git can autostash for pull, but needs 2.9 for --autostash, and only 2.6 for -c rebase.autoStash=true
     $repo->addGlobalConfig('rebase.autoStash', 'true');
     $repo->addGlobalCommandArgument('--strategy=ours');
+    // Needed since git 2.9. @todo Not on lower version.
+    $repo->addGlobalCommandArgument('--allow-unrelated-histories');
     $repo->pull($destination, 'HEAD', FALSE);
+    $repo->removeGlobalCommandArgument('--allow-unrelated-histories');
     $repo->removeGlobalCommandArgument('--strategy=ours');
     $repo->removeGlobalConfig('rebase.autoStash');
   }
