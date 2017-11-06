@@ -229,6 +229,9 @@ function _deploya_remote_login($alias) {
     if (!empty($alias['remote-user'])) {
       $login = "{$alias['remote-user']}@$login";
     }
+    if (!empty($alias['ssh-options'])) {
+      $login = "$login {$alias['ssh-options']}";
+    }
   }
   return $login;
 }
