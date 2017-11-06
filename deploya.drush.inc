@@ -256,9 +256,9 @@ function _deploya_remote_info($alias) {
     }
     if (!empty($alias['ssh-options'])) {
       $sshOptions = $alias['ssh-options'];
-      preg_match('/-p [0-9]+/u', $sshOptions, $m);
-      if (isset($m[0])) {
-        $port = $m[0];
+      preg_match('/-p ([0-9]+)/u', $sshOptions, $m);
+      if (isset($m[1])) {
+        $port = $m[1];
       }
     }
   }
