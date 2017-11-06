@@ -233,7 +233,7 @@ function _deploya_remote_login($alias) {
       $login = "$login {$alias['ssh-options']}";
     }
   }
-  return $login;
+  return "ssh $login";
 }
 
 function deploya_allow_ssh($source, $destination) {
