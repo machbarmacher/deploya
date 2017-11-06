@@ -208,32 +208,61 @@ function _deploya_push_code_uri($alias) {
     $uri = $alias['git-deployment-uri'];
   }
   else {
-    $uri = _deploya_root_uri($alias, ':');
+    $uri = 'ssh://' . _deploya_root_uri($alias);
 
   }
   return $uri;
 }
 
-function _deploya_root_uri($alias, $separator = '') {
-// Use parent directory of drupal root as git remote.
+function _deploya_root_uri($alias) {
+  // Use parent directory of drupal root as git remote.
   $path = dirname($alias['root']);
-  $login = _deploya_remote_login($alias);
-  $uri = "$login$separator$path";
+  if (substr($path, 0, 1) !== '/') {
+    $path = "/~/$path";
+  }
+  $server = _deploya_remote_server($alias);
+  $uri = "$server$path";
   return $uri;
+}
+
+/**
+ * @param $alias
+ */
+function _deploya_remote_server($alias) {
+  list($userAtServer, $port) = _deploya_remote_info($alias);
+  if ($port) {
+    $userAtServer .= ":$port";
+  }
+  return $userAtServer;
 }
 
 function _deploya_remote_login($alias) {
-  $login = '';
+  list($userAtServer, $port, $sshOptions) = _deploya_remote_info($alias);
+  $ssh = "ssh $userAtServer";
+  if ($port) {
+    $ssh .= " $sshOptions";
+  }
+  return $ssh;
+}
+
+function _deploya_remote_info($alias) {
+  $userAtServer = '';
+  $sshOptions = NULL;
+  $port = NULL;
   if (!empty($alias['remote-host'])) {
-    $login = "{$alias['remote-host']}";
+    $userAtServer = "{$alias['remote-host']}";
     if (!empty($alias['remote-user'])) {
-      $login = "{$alias['remote-user']}@$login";
+      $userAtServer = "{$alias['remote-user']}@$userAtServer";
     }
     if (!empty($alias['ssh-options'])) {
-      $login = "$login {$alias['ssh-options']}";
+      $sshOptions = $alias['ssh-options'];
+      preg_match('/-p [0-9]+/u', $sshOptions, $m);
+      if (isset($m[0])) {
+        $port = $m[0];
+      }
     }
   }
-  return "ssh $login";
+  return [$userAtServer, $port, $sshOptions];
 }
 
 function deploya_allow_ssh($source, $destination) {
