@@ -16,7 +16,7 @@ function deploya_drush_command() {
 
   $items['deploya-info'] = array(
     'callback' => 'deploya_info',
-    'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
+    'bootstrap' => DRUSH_BOOTSTRAP_NONE,
     'aliases' => ['dinfo'],
     'description' => 'Get URIs for alias.',
     'arguments' => [
