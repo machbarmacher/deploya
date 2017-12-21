@@ -20,7 +20,7 @@ function deploya_drush_command() {
     'aliases' => ['dinfo'],
     'description' => 'Get URIs for alias.',
     'arguments' => [
-      'alias' => 'The remote installation\'s alias (without @).',
+      'alias' => 'The remote installation\'s alias.',
     ],
     'outputformat' => [
       'default' => 'key-value',
@@ -34,7 +34,7 @@ function deploya_drush_command() {
     'aliases' => ['dpushc'],
     'description' => 'Push code to other installation.',
     'arguments' => [
-      '$destination' => 'The remote installation\'s alias (without @) to push to.',
+      '$destination' => 'The remote installation\'s alias to push to.',
     ],
     'required-arguments' => TRUE,
     'options' => [
@@ -49,8 +49,8 @@ function deploya_drush_command() {
     'aliases' => ['dpulld'],
     'description' => 'Pull DB and files from live.',
     'options' => [
-      'source' => 'Source alias (without @), defaults to "live".',
-      'destination' => 'Destination  alias (without @), if different from current site.',
+      'source' => 'Source alias, defaults to "live".',
+      'destination' => 'Destination  alias, if different from current site.',
       'db' => 'Use --no-db to omit database.',
       'files' => 'Use --no-files to omit files.',
       'public-files' => 'Use --no-public-files to omit public file.',
@@ -66,8 +66,8 @@ function deploya_drush_command() {
     'aliases' => ['dallow'],
     'description' => 'Allow to ssh from source to destination.',
     'arguments' => [
-      'source' => 'Source alias (without @).',
-      'destination' => 'Destination alias (without @).',
+      'source' => 'Source alias.',
+      'destination' => 'Destination alias.',
     ],
   );
 
@@ -77,7 +77,7 @@ function deploya_drush_command() {
 function deploya_info($alias_name) {
   _deploya_autoload();
   $info = [];
-  $alias = drush_sitealias_get_record("@$alias_name");
+  $alias = drush_sitealias_get_record($alias_name);
   if (!$alias) {
     return drush_set_error('DEPLOYA_ERROR', dt('Unknown alias: !alias', ['!alias' => $alias_name]));
   }
@@ -105,19 +105,20 @@ function deploya_push_code($destination) {
   $uri = _deploya_push_code_uri($destination_alias);
   $branch = !empty($destination_alias['git-deployment-branch'])
     ? $destination_alias['git-deployment-branch'] : 'master';
+  $destination_remote_name = str_replace('@', '', $destination);
   $t_args = [
-    '!destination' => $destination,
+    '!destination' => $destination_remote_name,
     '!uri' => $uri,
   ];
 
   // We set up a named remote, but might as well push to uri.
   try {
-    $destination_remote = $repo->getRemote($destination, FALSE);
+    $destination_remote = $repo->getRemote($destination_remote_name, FALSE);
   } catch (\InvalidArgumentException $e) {
     // Remote does not exist.
     drush_log('Adding remote !destination', $t_args);
-    $repo->addRemote($destination, $uri);
-    $destination_remote = $repo->getRemote($destination);
+    $repo->addRemote($destination_remote_name, $uri);
+    $destination_remote = $repo->getRemote($destination_remote_name);
   } catch (\Exception $e) {
     // Something else happened.
   }
@@ -128,7 +129,7 @@ function deploya_push_code($destination) {
   if ($current_uri !== $uri) {
     drush_log(dt('Setting uri for remote !destination from !current_uri to !uri.', $t_args), LogLevel::OK);
     $repo->getCaller()->execute(sprintf('remote set-url %s %s',
-      drush_escapeshellarg($destination), drush_escapeshellarg($uri)));
+      drush_escapeshellarg($destination_remote_name), drush_escapeshellarg($uri)));
   }
   else {
     drush_log(dt('Checked uri for remote !destination is !uri.', $t_args));
@@ -141,7 +142,7 @@ function deploya_push_code($destination) {
     $repo->addGlobalCommandArgument('--strategy=ours');
     // Needed since git 2.9. @todo Not on lower version.
     $repo->addGlobalCommandArgument('--allow-unrelated-histories');
-    $repo->pull($destination, 'HEAD', FALSE);
+    $repo->pull($destination_remote_name, 'HEAD', FALSE);
     $repo->removeGlobalCommandArgument('--allow-unrelated-histories');
     $repo->removeGlobalCommandArgument('--strategy=ours');
     $repo->removeGlobalConfig('rebase.autoStash');
@@ -150,11 +151,11 @@ function deploya_push_code($destination) {
   // Do it.
   $local_branch = $repo->getMainBranch()->getName();
   _deploya_log_branch_info($repo, $local_branch);
-  $repo->fetch($destination, $branch);
-  _deploya_log_branch_info($repo, "refs/remotes/$destination/$branch");
+  $repo->fetch($destination_remote_name, $branch);
+  _deploya_log_branch_info($repo, "refs/remotes/$destination_remote_name/$branch");
   drush_log(dt('Pushing...'), LogLevel::OK);
-  $repo->push($destination, "+HEAD:$branch");
-  _deploya_log_branch_info($repo, "refs/remotes/$destination/$branch");
+  $repo->push($destination_remote_name, "+HEAD:$branch");
+  _deploya_log_branch_info($repo, "refs/remotes/$destination_remote_name/$branch");
 
   if ($pulldata_source = drush_get_option('pulldata')) {
     $pulldata_source = ($pulldata_source === TRUE) ? 'live' : $pulldata_source;
@@ -166,7 +167,7 @@ function deploya_push_code($destination) {
 }
 
 function _deploya_get_remote_alias($alias_name) {
-  $alias = drush_sitealias_get_record("@$alias_name");
+  $alias = drush_sitealias_get_record($alias_name);
   if (isset($alias['site-list'])) {
     $aliases = drush_sitealias_resolve_sitelist($alias);
     $alias = _deploya_intersect($aliases);
@@ -357,7 +358,7 @@ function deploya_pull() {
     drush_log(dt('Pulling DB...'), LogLevel::OK);
     // Dunno why we need this sometimes.
     drush_sitealias_create_self_alias();
-    drush_invoke_process("@self", 'sql-sync', ["@$source", "@$destination"]);
+    drush_invoke_process("@self", 'sql-sync', [$source, $destination]);
   }
   _deploya_rsync($source, $destination, '%files', 'public');
   // That function will check if the file path does exist.
@@ -370,8 +371,8 @@ function _deploya_rsync($source, $destination, $path, $prefix) {
     drush_log(dt('Skipping !prefix files...', $t_args));
     return;
   }
-  $source_path = "@$source:$path";
-  $destination_path = "@$destination:$path";
+  $source_path = "$source:$path";
+  $destination_path = "$destination:$path";
 
   // @see drush_core_rsync()
   $additional_options = [];
