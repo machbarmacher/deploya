@@ -52,11 +52,12 @@ function deploya_drush_command() {
       'source' => 'Source alias, defaults to "live".',
       'destination' => 'Destination  alias, if different from current site.',
       'db' => 'Use --no-db to omit database.',
-      'files' => 'Use --no-files to omit files.',
-      'public-files' => 'Use --no-public-files to omit public file.',
-      'private-files' => 'Use --no-private-files to omit private file.',
-      'public-files-exclude-paths' => 'Option --exclude-pahts for public files rsync.',
-      'private-files-exclude-paths' => 'Option --exclude-pahts for private files rsync.',
+      'files' => 'Use --files to include files.',
+      'public-files' => 'Use --public-files to include public file.',
+      'private-files' => 'Use --private-files to include private file.',
+      'public-files-exclude-paths' => 'Option --exclude-paths for public files rsync.',
+      'private-files-exclude-paths' => 'Option --exclude-paths for private files rsync.',
+      'protect' => 'Protect aliases from being destination. List of names that may contain "*" as wildcard. Defaults to "*live*,*prod*".',
     ],
   );
 
@@ -64,7 +65,7 @@ function deploya_drush_command() {
     'callback' => 'deploya_allow_ssh',
     'bootstrap' => DRUSH_BOOTSTRAP_NONE,
     'aliases' => ['dallow'],
-    'description' => 'Allow to ssh from source to destination.',
+    'description' => 'Setup destination authorized keys to allow ssh from source.',
     'arguments' => [
       'source' => 'Source alias.',
       'destination' => 'Destination alias.',
@@ -339,9 +340,13 @@ function deploya_pull() {
     return drush_set_error('DEPLOYA_ERROR', dt('Unknown destination: !destination', $t_args));
   }
 
-
   if ($source == $destination) {
     return drush_set_error('DEPLOYA_ERROR', dt('No need to pull data from !source to !destination', $t_args));
+  }
+
+  $protected = drush_get_option_list('protected', ['*live*', '*prod*']);
+  if (_deploya_protected($destination, $protected)) {
+    return drush_set_error('DEPLOYA_ERROR', dt('Protected destination: !destination', $t_args));
   }
 
   // Prompt for confirmation. This is destructive.
@@ -390,6 +395,28 @@ function _deploya_rsync($source, $destination, $path, $prefix) {
     $source_path,
     $destination_path
   ], ['exclude-paths' => drush_get_option("$prefix-files-exclude-paths")]);
+}
+
+/**
+ * Check if destination is protected.
+ *
+ * @param string $destination
+ *   Destination name.
+ * @param string[] $protected_patterns
+ *   Protected names, "*" as wildcard.
+ *
+ * @return bool
+ *   True if destination is protected.
+ */
+function _deploya_protected($destination, $protected_patterns) {
+  foreach ($protected_patterns as $protected_pattern) {
+    $regexp = preg_quote($protected_pattern, '#');
+    $regexp = str_replace('\\*', '.*', $regexp);
+    if (preg_match("#$regexp#ui", $destination)) {
+      return TRUE;
+    }
+  }
+  return FALSE;
 }
 
 function _deploya_autoload() {
