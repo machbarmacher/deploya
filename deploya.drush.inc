@@ -119,8 +119,6 @@ function deploya_push_code($destination) {
     drush_log('Adding remote !destination', $t_args);
     $repo->addRemote($destination_remote_name, $uri);
     $destination_remote = $repo->getRemote($destination_remote_name);
-  } catch (\Exception $e) {
-    // Something else happened.
   }
   $current_uri = $destination_remote->getPushURL();
   $t_args += [
