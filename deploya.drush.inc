@@ -370,7 +370,7 @@ function deploya_pull() {
 
 function _deploya_rsync($source, $destination, $path, $prefix) {
   $t_args = ['!prefix' => $prefix];
-  if (!drush_get_option('files', TRUE) || !drush_get_option("$prefix-files", TRUE)) {
+  if (!(drush_get_option('files', FALSE) || drush_get_option("$prefix-files", FALSE))) {
     drush_log(dt('Skipping !prefix files...', $t_args));
     return;
   }
