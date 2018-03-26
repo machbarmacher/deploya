@@ -10,16 +10,19 @@
       "email": "axel.rutz@machbarmacher.net"
     }
   ],
-  "_note1_repositories": "Until this PR is merged, copy this repo to root composer.json.",
-  "_note2_repositories": "Also require dev, not ^1.1.",
-  "_note3_repositories": "https://github.com/matteosister/GitElephant/issues/121",
-  "repositories": [
-    {
-      "type": "vcs",
-      "url": "https://github.com/machbarmacher/GitElephant"
+  "_note1_repositories": "Until these patches are merged, add extra/enable-patching in root composer.json.",
+  "extra": {
+    "enable-patching": true,
+    "patches": {
+      "cypresslab/gitelephant": {
+        "121": "https://github.com/matteosister/GitElephant/commit/06a352580e036041b38c585d66d3847d64e9f6b2.patch",
+        "123": "https://github.com/matteosister/GitElephant/commit/abb408000815aff43d8b61bd58cd6d040fe8ee6f.patch",
+        "124": "https://github.com/matteosister/GitElephant/commit/985220d0881c4465ef372f1af8b4aeca83a4d0c6.patch"
+      }
     }
-  ],
+  },
   "require": {
-    "cypresslab/gitelephant": "dev-develop"
+    "cypresslab/gitelephant": "dev-develop as dev-1.x",
+    "cweagans/composer-patches": "^1.6"
   }
 }
