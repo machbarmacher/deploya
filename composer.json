@@ -22,7 +22,7 @@
     }
   },
   "require": {
-    "cypresslab/gitelephant": "dev-develop as dev-1.x",
+    "cypresslab/gitelephant": "dev-develop as 1.1.2",
     "cweagans/composer-patches": "^1.6"
   }
 }
