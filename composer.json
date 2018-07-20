@@ -15,8 +15,6 @@
     "enable-patching": true,
     "patches": {
       "cypresslab/gitelephant": {
-        "123": "https://github.com/matteosister/GitElephant/commit/abb408000815aff43d8b61bd58cd6d040fe8ee6f.patch",
-        "124": "https://github.com/matteosister/GitElephant/commit/985220d0881c4465ef372f1af8b4aeca83a4d0c6.patch"
       }
     }
   },
